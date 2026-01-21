@@ -156,6 +156,21 @@ class HumanAITrust(evaluate.Metric):
         # === Trust Sensitivity Index (TSI) ===
         tsi = _safe_corr(trust, confidences)
 
+        # === Belief Shift Magnitude (BSM) ===
+        if belief_priors is not None and belief_posteriors is not None:
+            belief_priors_arr = np.array(belief_priors, dtype=float)
+            belief_posteriors_arr = np.array(belief_posteriors, dtype=float)
+            bsm = _safe_mean(np.abs(belief_posteriors_arr - belief_priors_arr))
+        else:
+            bsm = None
+
+        # === Explanation–Confidence Alignment (ECA) ===
+        if explanation_complexity is not None:
+            expl = np.array(explanation_complexity, dtype=float)
+            eca = _safe_corr(confidences, expl)
+        else:
+            eca = None
+
         # === Overconfidence Penalty (OCP) ===
         errors = np.array(
             [pred != ref for pred, ref in zip(predictions, references)],
@@ -173,10 +188,10 @@ class HumanAITrust(evaluate.Metric):
         results = {
             "expected_trust_error": float(ete),
             "trust_sensitivity_index": float(tsi),
-            "belief_shift_magnitude": None,
+            "belief_shift_magnitude": None if bsm is None else float(bsm),
             "overconfidence_penalty": float(ocp),
             "overconfidence_penalty_normalized": float(ocp_norm),
-            "explanation_confidence_alignment": None,
+            "explanation_confidence_alignment": None if eca is None else float(eca),
         }
 
         return results
